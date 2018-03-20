@@ -12,7 +12,7 @@ The target is a [Huawei G740-L00](https://www.gsmarena.com/huawei_ascend_g740-58
 
 ## Requirements
 
-The work will be done using a Linux computer, assuming root access to the phone. The [USB debugging must be enabled](https://developer.android.com/studio/debug/dev-options.html) and the [ADB tools](https://developer.android.com/studio/run/oem-usb.html) installed.
+The work will be done using a Linux computer, assuming root access to the phone, which has been factory reset. The [USB debugging must be enabled](https://developer.android.com/studio/debug/dev-options.html) and the [ADB tools](https://developer.android.com/studio/run/oem-usb.html) installed. To be sure to have to same command-line utilities, installing a [BusyBox package](https://play.google.com/store/apps/details?id=stericson.busybox) can't harm.
 
 ## Documentation
 
