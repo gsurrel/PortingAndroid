@@ -321,6 +321,42 @@ lrwxrwxrwx root     root              1970-01-01 20:29 userdata -> /dev/block/mm
 > Units: cylinders of 64 * 512 = 32768 bytes
 > Disk /dev/block/mmcblk0p9 doesn't contain a valid partition table
 > ```
+>
+> For information, here is another source for finding the partitions caracteristics:
+> ```console
+> root@android:/ # cat /proc/partitions
+> major minor  #blocks  name
+>
+>  179        0    7634944 mmcblk0
+>  179        1        256 mmcblk0p1
+>  179        2        256 mmcblk0p2
+>  179        3        512 mmcblk0p3
+>  179        4        256 mmcblk0p4
+>  179        5       1024 mmcblk0p5
+>  179        6       2048 mmcblk0p6
+>  179        7       2048 mmcblk0p7
+>  179        8          8 mmcblk0p8
+>  179        9       4096 mmcblk0p9
+>  179       10       4096 mmcblk0p10
+>  179       11       4096 mmcblk0p11
+>  179       12      32768 mmcblk0p12
+>  179       13      65536 mmcblk0p13
+>  179       14      16384 mmcblk0p14
+>  179       15      16384 mmcblk0p15
+>  179       16       4096 mmcblk0p16
+>  179       17       4096 mmcblk0p17
+>  179       18       8192 mmcblk0p18
+>  179       19       8192 mmcblk0p19
+>  179       20        640 mmcblk0p20
+>  179       21      12288 mmcblk0p21
+>  179       22     262144 mmcblk0p22
+>  179       23     196608 mmcblk0p23
+>  179       24    1048576 mmcblk0p24
+>  179       25    1155072 mmcblk0p25
+>  179       26    4780015 mmcblk0p26
+>  179       32   15558144 mmcblk1
+>  179       33   15557120 mmcblk1p1
+> ```
 
 We can using the following simple shell scripting to do something similar as previously: we save each partition with its name in a directory at the root of the sdcard named `phone_partitions`. I removed the chunking as the biggest partition is small enough for the target filesystem.
 
