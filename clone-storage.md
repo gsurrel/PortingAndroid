@@ -356,6 +356,31 @@ lrwxrwxrwx root     root              1970-01-01 20:29 userdata -> /dev/block/mm
 >  179       26    4780015 mmcblk0p26
 >  179       32   15558144 mmcblk1
 >  179       33   15557120 mmcblk1p1
+> 
+> root@android:/ # cat /proc/mounts
+> rootfs / rootfs ro,relatime 0 0
+> tmpfs /dev tmpfs rw,nosuid,relatime,mode=755 0 0
+> devpts /dev/pts devpts rw,relatime,mode=600 0 0
+> proc /proc proc rw,relatime 0 0
+> sysfs /sys sysfs rw,relatime 0 0
+> none /acct cgroup rw,relatime,cpuacct 0 0
+> tmpfs /mnt/asec tmpfs rw,relatime,mode=755,gid=1000 0 0
+> tmpfs /mnt/obb tmpfs rw,relatime,mode=755,gid=1000 0 0
+> none /dev/cpuctl cgroup rw,relatime,cpu 0 0
+> /dev/block/platform/msm_sdcc.1/by-name/system /system ext4 ro,relatime,data=ordered 0 0
+> /dev/block/platform/msm_sdcc.1/by-name/userdata /data ext4 rw,nosuid,nodev,relatime,noauto_da_alloc,data=ordered 0 0
+> /dev/block/platform/msm_sdcc.1/by-name/cache /cache ext4 rw,nosuid,nodev,relatime,data=ordered 0 0
+> /dev/block/platform/msm_sdcc.1/by-name/persist /persist ext4 rw,nosuid,nodev,relatime,data=ordered 0 0
+> /dev/block/platform/msm_sdcc.1/by-name/modem /firmware vfat ro,relatime,uid=1000,gid=1000,fmask=0337,dmask=0227,codepage=cp437,iocharset=iso8
+> 859-1,shortname=lower,errors=remount-ro 0 0
+> /dev/block/platform/msm_sdcc.1/by-name/cust /cust ext4 ro,relatime,data=ordered 0 0
+> /dev/block/vold/179:26 /storage/sdcard0 vfat rw,nosuid,nodev,noexec,relatime,uid=1000,gid=1015,fmask=0002,dmask=0002,allow_utime=0020,codepag
+> e=cp437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro 0 0
+> /dev/block/vold/179:33 /storage/sdcard1 vfat rw,nosuid,nodev,noexec,relatime,uid=1000,gid=1015,fmask=0002,dmask=0002,allow_utime=0020,codepag
+> e=cp437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro 0 0
+> /dev/block/vold/179:33 /mnt/secure/asec vfat rw,nosuid,nodev,noexec,relatime,uid=1000,gid=1015,fmask=0002,dmask=0002,allow_utime=0020,codepag
+> e=cp437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro 0 0
+> tmpfs /storage/sdcard1/.android_secure tmpfs ro,relatime,size=0k,mode=000 0 0
 > ```
 
 We can using the following simple shell scripting to do something similar as previously: we save each partition with its name in a directory at the root of the sdcard named `phone_partitions`. I removed the chunking as the biggest partition is small enough for the target filesystem.
