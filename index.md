@@ -16,4 +16,4 @@ The work will be done using a Linux computer, assuming root access to the phone.
 
 From early investigation, I think that [Jonathan Levin](http://newandroidbook.com/)'s [Android Internals::A Confectioner's Cookbook - Power User's View](http://newandroidbook.com/AIvI-M-RL1.pdf) will be very handy, along with [**xda**developers forums](https://forum.xda-developers.com/).
 
-{% include toc.md %}
+{% include_relative toc.md %}
