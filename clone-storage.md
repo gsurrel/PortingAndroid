@@ -9,7 +9,7 @@ Rather than working on the phone directly, it's easier and safer to work on an i
 1. Let's have an interactive shell on the device, using in a terminal (of your computer) `adb shell`. It shall give you a prompt such as `shell@android:/ $`. If it doesn't work, be sure your device has USB debugging turned on, as written in the [requirements](https://gsurrel.github.io/PortingAndroid/#requirements).
 1. Now, let's elevate to root, not to be blocked by restrictions set on the user: type `su`. The prompt should have changed to ` root@android:/ #`. It it doesn't work, check if your device is rooted. The phone might ask for permission to get root access, be sure to allow it.
 1. We can now list all the disks (*I call flash storage and SD cards disks*) and partitions using `ls -ls /dev/`. There should be a big bunch of text, as follows
-    ```console
+    ```
     shell@android:/ $ su
     root@android:/ # ls -l /dev/block
     brw------- root     root       7,   0 1970-01-01 20:29 loop0
@@ -20,7 +20,7 @@ Rather than working on the phone directly, it's easier and safer to work on an i
     brw------- root     root       7,   5 1970-01-01 20:29 loop5
     brw------- root     root       7,   6 1970-01-01 20:29 loop6
     brw------- root     root       7,   7 1970-01-01 20:29 loop7
-    brw------- root     root     179,   0 1970-01-01 20:29 mmcblk0     → First ('zero') real physical disk
+    brw------- root     root     179,   0 1970-01-01 20:29 mmcblk0     → First disk (internal)
     brw------- root     root     179,   1 1970-01-01 20:29 mmcblk0p1   →   Partition 1
     brw------- root     root     179,  10 1970-01-01 20:29 mmcblk0p10  →   Partition 10
     brw------- root     root     179,  11 1970-01-01 20:29 mmcblk0p11  →   Partition 11
@@ -47,7 +47,7 @@ Rather than working on the phone directly, it's easier and safer to work on an i
     brw------- root     root     179,   7 1970-01-01 20:29 mmcblk0p7
     brw------- root     root     179,   8 1970-01-01 20:29 mmcblk0p8
     brw------- root     root     179,   9 1970-01-01 20:29 mmcblk0p9
-    brw------- root     root     179,  32 1970-01-01 20:29 mmcblk1
+    brw------- root     root     179,  32 1970-01-01 20:29 mmcblk1     → Second disk (SD card)
     brw------- root     root     179,  33 1970-01-01 20:29 mmcblk1p1
     drwxr-xr-x root     root              1970-01-01 20:29 platform
     brw------- root     root       1,   0 1970-01-01 20:29 ram0
@@ -75,7 +75,7 @@ Rather than working on the phone directly, it's easier and safer to work on an i
 
 Before doing a bitwise copy of the internal memory, we will fill the empty spaces with zeros, so it can be compressed well. **Be sure** to be connected to the computer using the *MTP protocol*, rather than the *USB mass storage* one. Otherwise, it will not be able to write to the memory shared with the computer. The following commands will do the zeroing:
 
-```console
+```
 cd /data
 dd if=/dev/zero of=zero.small.file bs=1M count=102400
 dd if=/dev/zero of=zero.file bs=100M
@@ -98,14 +98,16 @@ rm zero.small.file
 rm zero.file
 ```
 
-It will take quite some time, please be patient.
+It will take quite some time, please be patient. Seeing `zero.file: write error: No space left on device` is what we are looking for: it is a file full of zeros, filling up the whole avaiable memory. It is removed just after to free-up space.
 
 ## Copying the memory, compressing it, and chunking it
 
 Finally, we can start copying (imaging) the internal memory. The command below will read the disk bytes, compress it on the fly, and chunk it in chunks smaller than 1GB (to avoid problems of creating a file too big for the filesystem) and write it to the external SD card. If you have no SD card available, you can probably stream the output in a SSH tunnel to your computer.
 
-```console
+```
 dd if=/dev/block/mmcblk0 bs=96000000 | gzip -c | split -b 1000000000 - /storage/sdcard1/phone.img.gz
 ```
+
+This step is also quite long. If it is too long, wait faster!
 
 {% include_relative toc.md %}
