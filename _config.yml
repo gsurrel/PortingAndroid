@@ -1,1 +1,4 @@
 theme: jekyll-theme-cayman
+title: Porting Android
+description: Explanation on how to port Android to a new device
+show_downloads: "false"
