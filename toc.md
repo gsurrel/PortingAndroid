@@ -1,3 +1,3 @@
-# Table of contents
+## Table of contents
 
 - [Home](https://gsurrel.github.io/PortingAndroid/)
