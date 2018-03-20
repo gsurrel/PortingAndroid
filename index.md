@@ -10,8 +10,10 @@ The target is a [Huawei G740-L00](https://www.gsmarena.com/huawei_ascend_g740-58
 
 # Requirements
 
-The work will be done using a Linux computer, assuming root access to the phone.
+The work will be done using a Linux computer, assuming root access to the phone. The [USB debugging must be enabled](https://developer.android.com/studio/debug/dev-options.html) and the [ADB tools](https://developer.android.com/studio/run/oem-usb.html) installed.
 
 # Documentation
 
 From early investigation, I think that [Jonathan Levin](http://newandroidbook.com/)'s [Android Internals::A Confectioner's Cookbook - Power User's View](http://newandroidbook.com/AIvI-M-RL1.pdf) will be very handy, along with [**xda**developers forums](https://forum.xda-developers.com/).
+
+{% include toc.md %}
