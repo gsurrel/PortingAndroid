@@ -163,6 +163,165 @@ lrwxrwxrwx root     root              1970-01-01 20:29 tz -> /dev/block/mmcblk0p
 lrwxrwxrwx root     root              1970-01-01 20:29 userdata -> /dev/block/mmcblk0p25
 ```
 
+> **Note:** To know more about the partitions, check [*El Grande Partition Table Reference* in the **xda**developer forums](https://forum.xda-developers.com/showthread.php?t=1959445). Below is the `fdisk` output, ran on both the device and partitions (to get more info therwise fails). It has been restyled by hand to be a little more legible.
+> 
+> ```console
+> root@android:/ # fdisk -l /dev/block/mmcblk*
+> 
+> $ Disk /dev/block/mmcblk0: 7456 MB, 7818182656 bytes, 15269888 sectors
+> 946 cylinders, 256 heads, 63 sectors/track
+> Units: cylinders of 16128 * 512 = 8257536 bytes
+> 
+> Device             Boot StartCHS    EndCHS        StartLBA     EndLBA    Sectors  Size Id Type
+> /dev/block/mmcblk0p1    0,0,1       1023,255,63          1 4294967295 4294967295 2047G ee EFI GPT
+> Partition 1 has different physical/logical start (non-Linux?):
+>      phys=(0,0,1) logical=(0,0,2)
+> Partition 1 has different physical/logical end:
+>      phys=(1023,255,63) logical=(266305,4,4)
+> 
+> $ Disk /dev/block/mmcblk0p1: 0 MB, 262144 bytes, 512 sectors
+> 8 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p1 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p10: 4 MB, 4194304 bytes, 8192 sectors
+> 128 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p10 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p11: 4 MB, 4194304 bytes, 8192 sectors
+> 128 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p11 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p12: 32 MB, 33554432 bytes, 65536 sectors
+> 1024 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p12 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p13: 64 MB, 67108864 bytes, 131072 sectors
+> 2048 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> 
+> Device                Boot StartCHS    EndCHS        StartLBA     EndLBA    Sectors  Size Id Type
+> /dev/block/mmcblk0p13p1 6f 357,116,40  357,32,45    778135908 1919645538 1141509631  544G 72 Unknown
+> Partition 1 does not end on cylinder boundary
+> /dev/block/mmcblk0p13p2 69 288,115,43  367,114,50   168689522 2104717761 1936028240  923G 65 Unknown
+> Partition 2 does not end on cylinder boundary
+> /dev/block/mmcblk0p13p3 73 366,32,33   357,32,43   1869881465 3805909656 1936028192  923G 79 Unknown
+> Partition 3 does not end on cylinder boundary
+> /dev/block/mmcblk0p13p4 74 372,97,50   0,10,0               0 3637226495 3637226496 1734G  d Unknown
+> Partition 4 does not end on cylinder boundary
+> 
+> Partition table entries are not in disk order
+> 
+> $ Disk /dev/block/mmcblk0p14: 16 MB, 16777216 bytes, 32768 sectors
+> 512 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p14 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p15: 16 MB, 16777216 bytes, 32768 sectors
+> 512 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p15 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p16: 4 MB, 4194304 bytes, 8192 sectors
+> 128 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p16 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p17: 4 MB, 4194304 bytes, 8192 sectors
+> 128 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p17 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p18: 8 MB, 8388608 bytes, 16384 sectors
+> 256 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p18 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p19: 8 MB, 8388608 bytes, 16384 sectors
+> 256 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p19 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p2: 0 MB, 262144 bytes, 512 sectors
+> 8 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p2 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p20: 0 MB, 655360 bytes, 1280 sectors
+> 20 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p20 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p21: 12 MB, 12582912 bytes, 24576 sectors
+> 384 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p21 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p22: 256 MB, 268435456 bytes, 524288 sectors
+> 8192 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p22 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p23: 192 MB, 201326592 bytes, 393216 sectors
+> 6144 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p23 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p24: 1024 MB, 1073741824 bytes, 2097152 sectors
+> 32768 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p24 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p25: 1128 MB, 1182793728 bytes, 2310144 sectors
+> 36096 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p25 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p26: 4667 MB, 4894735872 bytes, 9560031 sectors
+> 149375 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> 
+> Device                Boot StartCHS    EndCHS        StartLBA     EndLBA    Sectors  Size Id Type
+> 
+> $ Disk /dev/block/mmcblk0p3: 0 MB, 524288 bytes, 1024 sectors
+> 16 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p3 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p4: 0 MB, 262144 bytes, 512 sectors
+> 8 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p4 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p5: 1 MB, 1048576 bytes, 2048 sectors
+> 32 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p5 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p6: 2 MB, 2097152 bytes, 4096 sectors
+> 64 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p6 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p7: 2 MB, 2097152 bytes, 4096 sectors
+> 64 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p7 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p8: 0 MB, 8192 bytes, 16 sectors
+> 0 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p8 doesn't contain a valid partition table
+> 
+> $ Disk /dev/block/mmcblk0p9: 4 MB, 4194304 bytes, 8192 sectors
+> 128 cylinders, 4 heads, 16 sectors/track
+> Units: cylinders of 64 * 512 = 32768 bytes
+> Disk /dev/block/mmcblk0p9 doesn't contain a valid partition table
+> ```
+
 We can using the following simple shell scripting to do something similar as previously: we save each partition with its name in a directory at the root of the sdcard named `phone_partitions`. I removed the chunking as the biggest partition is small enough for the target filesystem.
 
 ```console
