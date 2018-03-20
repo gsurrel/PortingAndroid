@@ -166,8 +166,8 @@ lrwxrwxrwx root     root              1970-01-01 20:29 userdata -> /dev/block/mm
 We can using the following simple shell scripting to do something similar as previously: we save each partition with its name in a directory at the root of the sdcard named `phone_partitions`. I removed the chunking as the biggest partition is small enough for the target filesystem.
 
 ```console
-root@android:/ # cd /dev/block/platform/msm_sdcc.1/by-name/
 root@android:/ # mkdir /storage/sdcard1/phone_partitions/
+root@android:/ # cd /dev/block/platform/msm_sdcc.1/by-name/
 root@android:/dev/block/platform/msm_sdcc.1/by-name/ # for f in *; do dd if=$f bs=96000000 | gzip -c > /storage/sdcard1/phone_partitions/$f.img.gz; done
 ```
 
