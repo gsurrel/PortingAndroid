@@ -1,4 +1,4 @@
-# Porting Android
+# Introduction
 
 The mail goal of this website is to document how to port [Android Lineage OS](https://lineageos.org/) to a specific device ([see below](#target-device). At the time of this writing, the only thing avaiable is **root access**.
 
