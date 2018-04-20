@@ -121,13 +121,27 @@ Filesystem             Size   Used   Free   Blksize
 
 ## Copying the whole memory, compressing it, and chunking it
 
-Finally, we can start copying (imaging) the internal memory. The command below will read the disk bytes, compress it on the fly, and chunk it in chunks smaller than 1GB (to avoid problems of creating a file too big for the filesystem) and write it to the external SD card. If you have no SD card available, you can probably stream the output in a SSH tunnel to your computer.
+Finally, we can start copying (imaging) the internal memory. It's possible to save the disk image either on a SD card if the phone has a SD card slot, or directly transfer it through ADB.
+
+### With a SD card available
+
+The command below will read the disk bytes, compress it on the fly, and chunk it in chunks smaller than 1GB (to avoid problems of creating a file too big for the filesystem if it's FAT32) and write it to the external SD card.
 
 ```
 dd if=/dev/block/mmcblk0 bs=96000000 | gzip -c | split -b 1000000000 - /storage/sdcard1/phone.img.gz
 ```
 
 This step is also quite long. If it is too long, wait faster!
+
+### Without a SD card
+
+The command is quite similar: read the memory, compress it. This writes the compressed output to the standard output, so we can redirect it to a local file. The `pv` par is optionnal, it's only for having feedback on the progress of the command.
+
+```
+adb shell "cat /dev/block/sda | gzip -" | pv > ../restored_csc.img.gz
+```
+
+This step is not faster than using the SD card, so same rule apply: if it is too long, wait faster!
 
 ## Copying partition by partition, compressing it, and chunking it
 
