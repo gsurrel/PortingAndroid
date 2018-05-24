@@ -12,7 +12,9 @@ The target is a [Huawei G740-L00](https://www.gsmarena.com/huawei_ascend_g740-58
 
 ## Requirements
 
-The work will be done using a **Linux computer**, assuming **root access** to the phone with an **unlocked bootloader**, which has been factory reset. The [USB debugging must be enabled](https://developer.android.com/studio/debug/dev-options.html) and the [ADB tools](https://developer.android.com/studio/run/oem-usb.html) installed. To be sure to have to same command-line utilities, installing a [BusyBox package](https://play.google.com/store/apps/details?id=stericson.busybox) can't harm.
+The work will be done using a **Linux computer**, assuming **root access** to the phone with an **unlocked bootloader**, which has been factory reset. The [USB debugging must be enabled](https://developer.android.com/studio/debug/dev-options.html) and the [ADB tools](https://developer.android.com/studio/run/oem-usb.html) installed. To be sure to have to same command-line utilities, installing a [terminal emulator](https://f-droid.org/packages/jackpal.androidterm) and a [BusyBox package](https://f-droid.org/packages/ru.meefik.busybox) can't harm.
+
+*Note: I favor FLOSS software, hence linking to F-Droid. It has the side benefit of not hiding the APKs, so you can directly download and install them with `adb install file.apk`*
 
 ## Documentation
 
