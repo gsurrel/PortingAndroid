@@ -1,4 +1,4 @@
-# Clone the phone's storage memory
+ls -ls /dev/# Clone the phone's storage memory
 
 ## Introduction
 
@@ -7,11 +7,11 @@ Rather than working on the phone directly, it's easier and safer to work on an i
 ## Finding the storage place
 
 1. Let's have an interactive shell on the device, using in a terminal (of your computer) `adb shell`. It shall give you a prompt such as `shell@android:/ $`. If it doesn't work, be sure your device has USB debugging turned on, as written in the [requirements](https://gsurrel.github.io/PortingAndroid/#requirements).
-1. Now, let's elevate to root, not to be blocked by restrictions set on the user: type `su`. The prompt should have changed to `root@android:/ #`. It it doesn't work, check if your device is rooted. The phone might ask for permission to get root access, be sure to allow it.
-1. We can now list all the disks (*I call flash storage and SD cards disks*) and partitions using `ls -ls /dev/`. There should be a big bunch of text, as follows
+1. Now, let's elevate to root, not to be blocked by restrictions set on the user: type `su`. The prompt should have changed to `root@android:/ #`. It it doesn't work, check if your device is rooted. The phone might ask for permission to get root access, be sure to allow it./
+1. We can now list all the disks (*I call flash storage and SD cards disks*) and partitions using `ls -ls /dev/block/`. There should be a big bunch of text, as follows:
     ```console
     shell@android:/ $ su
-    root@android:/ # ls -l /dev/block
+    root@android:/ # ls -l /dev/block/
     brw------- root     root       7,   0 1970-01-01 20:29 loop0
     brw------- root     root       7,   1 1970-01-01 20:29 loop1
     brw------- root     root       7,   2 1970-01-01 20:29 loop2
