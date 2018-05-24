@@ -10,3 +10,9 @@ In a terminal, use the following command to install `adb` and `fastboot`, along 
 sudo apt install android-sdk-platform-tools
 ```
 
+Using pipe-view (`pv`) show the progress of long piped operations. This is used in the backup part of this guide, install it:
+
+```console
+sudo apt install pv
+```
+
