@@ -1,4 +1,4 @@
-ls -ls /dev/# Clone the phone's storage memory
+# Clone the phone's storage memory
 
 ## Introduction
 
@@ -188,7 +188,7 @@ root@android:/dev/block/platform/msm_sdcc.1/by-name/ # for f in *; do dd if=$f b
 Here is a version without requiring the SD card, transferring the data directly through ADB in the current folder in compressed archives:
 
 ```console
-$ for f in $(adb shell "ls /dev/block/platform/msm_sdcc.1/by-name/"); do f=$(echo $f | tr -d "\n" | tr -d "\r"); adb shell "su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000 | gzip -c " | pv > $f.img.gz; done
+$ for f in $(adb shell "ls /dev/block/platform/msm_sdcc.1/by-name/"); do f=$(echo $f | tr -d "\n" | tr -d "\r"); adb shell "su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000 | gzip -c" | pv > $f.img.gz; done
 ```
 
 ## More information about partitions
