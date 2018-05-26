@@ -12,6 +12,6 @@ sudo apt install android-sdk-platform-tools
 Using `fdisk` gives informations about partitions. Let's install it:
 
 ```console
-sudo apt install pv
+sudo apt install fdisk
 ```
 
