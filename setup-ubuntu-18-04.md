@@ -9,8 +9,7 @@ In a terminal, use the following command to install `adb` and `fastboot`, along 
 ```console
 sudo apt install android-sdk-platform-tools
 ```
-
-Using pipe-view (`pv`) show the progress of long piped operations. This is used in the backup part of this guide, install it:
+Using `fdisk` gives informations about partitions. Let's install it:
 
 ```console
 sudo apt install pv
