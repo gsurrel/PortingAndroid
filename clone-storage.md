@@ -138,7 +138,7 @@ This step is also quite long. If it is too long, wait faster!
 The command is quite similar: read the memory, compress it. This writes the compressed output to the standard output, so we can redirect it to a local file. The `pv` par is optionnal, it's only for having feedback on the progress of the command.
 
 ```
-adb shell "cat /dev/block/sda | gzip -c" | pv > ../phone.img.gz
+adb forward tcp:7080 tcp:8080; adb shell "cat /dev/block/sda | gzip -c 2>/dev/null | nc -l -p 8080"& sleep 1; nc localhost 7080 > phone.img.gz; adb forward --remove tcp:7080
 ```
 
 This step is similarly fast than using the SD card, so same rule apply: if it is too long, wait faster!
@@ -188,8 +188,25 @@ root@android:/dev/block/platform/msm_sdcc.1/by-name/ # for f in *; do dd if=$f b
 Here is a version without requiring the SD card, transferring the data directly through ADB in the current folder in compressed archives:
 
 ```console
-$ for f in $(adb shell "ls /dev/block/platform/msm_sdcc.1/by-name/"); do f=$(echo $f | tr -d "\n" | tr -d "\r"); adb shell "su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000 | gzip -c" | pv > $f.img.gz; done
+$ adb forward tcp:7080 tcp:8080; for f in $(adb shell "ls /dev/block/platform/msm_sdcc.1/by-name/"); do f=$(echo $f | tr -d "\n" | tr -d "\r"); adb shell "su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000 | gzip -c 2>/dev/null | nc -l -p 8080"& sleep 1; echo -e "nc localhost 7080 > $f.img.gz << EOF\nEOF\n" | sh; wait $(jobs -rp); done; adb forward --remove tcp:7080
 ```
+The previous crazy one-line command does the following:
+
+1. Open the USB connection as a network connection (LAN) `adb forward tcp:7080 tcp:8080;`
+1. For each partition in the phone: `for f in $(adb shell "ls /dev/block/platform/msm_sdcc.1/by-name/"); do`
+    1. Run a command on the phone which: `adb shell "…";`
+        1. Reads the raw memory `su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000`
+        1. Compresses it (while hiding error messages) `| gzip -c 2>/dev/null`
+        1. Sends it over the network-over-USB connection `| nc -l -p 8080`
+    1. In parallel on the computer: `&`
+        1. Waits for a second to give time to the phone `sleep 1;`
+        1. Creates a command string which: `echo -e "…"`
+            - Starts the process to receive the file over the network-over-USB `nc localhost 7080 > $f.img.gz`
+            - Simulates the user to press the Enter key to close the connection `<< EOF\nEOF\n`
+        1. Command string which is executed immediately `| sh;`
+        1. Waits until the phone finishes `wait $(jobs -rp);`
+1. Ends the loop `done;`
+1. Removes the network-over-USB redirection `adb forward --remove tcp:7080`
 
 ## More information about partitions
 
