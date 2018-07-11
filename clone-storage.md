@@ -119,11 +119,11 @@ Filesystem             Size   Used   Free   Blksize
 /mnt/secure/asec        14G     5G     9G   32768
 ```
 
-## Copying the whole memory, compressing it, and chunking it
+## Copying the WHOLE MEMORY, compressing it, and chunking it
 
 Finally, we can start copying (imaging) the internal memory. It's possible to save the disk image either on a SD card if the phone has a SD card slot, or directly transfer it through ADB.
 
-### With a SD card available
+### With a SD card
 
 The command below will read the disk bytes, compress it on the fly, and chunk it in chunks smaller than 1GB (to avoid problems of creating a file too big for the filesystem if it's FAT32) and write it to the external SD card.
 
@@ -143,7 +143,7 @@ adb forward tcp:7080 tcp:8080; adb shell "cat /dev/block/sda | gzip -c 2>/dev/nu
 
 This step is similarly fast than using the SD card, so same rule apply: if it is too long, wait faster!
 
-## Copying partition by partition, compressing it, and chunking it
+## Copying PARTITION BY PARTITION, compressing it, and chunking it
 
 We have a big backup which contains everything, including the partition table. It is nice (I guess) but not the most convinient. We can also image every partition individually, with their individual names (the `msm_sdcc.1` might change across devices and Android versions):
 
@@ -177,6 +177,8 @@ lrwxrwxrwx root     root              1970-01-01 20:29 tz -> /dev/block/mmcblk0p
 lrwxrwxrwx root     root              1970-01-01 20:29 userdata -> /dev/block/mmcblk0p25
 ```
 
+### With a SD card
+
 We can using the following simple shell scripting to do something similar as previously: we save each partition with its name in a directory at the root of the sdcard named `phone_partitions`. I removed the chunking as the biggest partition is small enough for the target filesystem.
 
 ```console
@@ -185,19 +187,28 @@ root@android:/ # cd /dev/block/platform/msm_sdcc.1/by-name/
 root@android:/dev/block/platform/msm_sdcc.1/by-name/ # for f in *; do dd if=$f bs=96000000 | gzip -c > /storage/sdcard1/phone_partitions/$f.img.gz; done
 ```
 
+### Without a SD card
+
 Here is a version without requiring the SD card, transferring the data directly through ADB in the current folder in compressed archives:
 
 ```console
-$ adb forward tcp:7080 tcp:8080; for f in $(adb shell "ls /dev/block/platform/msm_sdcc.1/by-name/"); do f=$(echo $f | tr -d "\n" | tr -d "\r"); adb shell "su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000 | gzip -c 2>/dev/null | nc -l -p 8080"& sleep 1; echo -e "nc localhost 7080 > $f.img.gz << EOF\nEOF\n" | sh; wait $(jobs -rp); done; adb forward --remove tcp:7080
+$ adb forward tcp:7080 tcp:8080; for f in $(adb shell "ls /dev/block/platform/msm_sdcc.1/by-name/"); do f=$(echo $f | tr -d "\n" | tr -d "\r"); adb shell "cd /data/local/tmp; mkfifo $f.img.gz; su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000 | gzip -c 2>/dev/null | tee $f.img.gz | nc -l -p 8080 & md5sum $f.img.gz >> sums.md5; rm $f.img.gz;"& sleep 1; echo -e "nc localhost 7080 > $f.img.gz << EOF\nEOF\n" | sh; wait $(jobs -rp); done; adb forward --remove tcp:7080; adb pull /data/local/tmp/sums.md5; adb shell "rm /data/local/tmp/sums.md5"; md5sum -c sums.md5
 ```
-The previous crazy one-line command does the following:
+The previous massive command does the following:
 
 1. Open the USB connection as a network connection (LAN) `adb forward tcp:7080 tcp:8080;`
 1. For each partition in the phone: `for f in $(adb shell "ls /dev/block/platform/msm_sdcc.1/by-name/"); do`
+    1. Clean the partition name `f` of line-returns: `f=$(echo $f | tr -d "\n" | tr -d "\r");`
     1. Run a command on the phone which: `adb shell "…";`
-        1. Reads the raw memory `su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000`
+        1. Move to the temp directory `cd /data/local/tmp;`
+        1. Creates a fifo called `f`.img.gz `mkfifo $f.img.gz;`
+        1. Reads the raw partition `f` memory `su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000`
         1. Compresses it (while hiding error messages) `| gzip -c 2>/dev/null`
-        1. Sends it over the network-over-USB connection `| nc -l -p 8080`
+        1. Duplicates the output to the fifo (*file*) `f`.img.gz ` | tee $f.img.gz`
+        1. Sends the gzipped result over the network-over-USB connection `| nc -l -p 8080`
+        1. And in parallel, computes locally the hash of the gzipped result reading from the fifo `& md5sum $f.img.gz`
+        1. Appends it to a file called sums.md5 `>> sums.md5;`
+        1. And removes the fifo `rm $f.img.gz;`
     1. In parallel on the computer: `&`
         1. Waits for a second to give time to the phone `sleep 1;`
         1. Creates a command string which: `echo -e "…"`
@@ -207,46 +218,79 @@ The previous crazy one-line command does the following:
         1. Waits until the phone finishes `wait $(jobs -rp);`
 1. Ends the loop `done;`
 1. Removes the network-over-USB redirection `adb forward --remove tcp:7080`
+1. Retrieve the md5 sums from the phone `adb pull /data/local/tmp/sums.md5;`
+1. Removes the sums file on the phone `adb shell "rm /data/local/tmp/sums.md5";`
+1. Compares the local `.img.gz` backups to the ones creates on the phone `md5sum -c sums.md5`
+
+**However**, we need a final step: we have saved neatly and nicely all the partitions but one thing is missing. The final part is 
+the partition map which is at the beginning of the disk. As far as I know, the following is enough (using fdisk as shown in the next section to adapt it: `bs` equal to the `Logical sector size` value, and `count` equal to first `Start (sector)` minus 1):
+
+```console
+adb shell "su -c dd if=/dev/block/mmcblk0 of=/data/local/tmp/mbr bs=512 count=33"; adb pull /data/local/tmp/mbr; adb shell "rm /data/local/tmp/mbr"
+```
 
 ## More information about partitions
 
 To know more about the partitions, check [*El Grande Partition Table Reference* in the **xda**developer forums](https://forum.xda-developers.com/showthread.php?t=1959445). I save the output here as I don't know if it will be useful in the future. Below is the `fdisk` output, ran on both the device and partitions (to get more info therwise fails). It has been restyled by hand to be a little more legible.
 
 ```console
-root@android:/ # fdisk -l /dev/block/mmcblk*
+root@android:/ # fdisk -l /dev/block/mmcblk*                     
+Found valid GPT with protective MBR; using GPT
 
-% Disk /dev/block/mmcblk0: 7456 MB, 7818182656 bytes, 15269888 sectors
-946 cylinders, 256 heads, 63 sectors/track
-Units: cylinders of 16128 * 512 = 8257536 bytes
+Disk /dev/block/mmcblk0: 15269888 sectors, 3360M
+Logical sector size: 512
+Disk identifier (GUID): 98101b32-bbe2-4bf2-a06e-2bb33d000c20
+Partition table holds up to 28 entries
+First usable sector is 34, last usable sector is 15269854
 
-Device             Boot StartCHS    EndCHS        StartLBA     EndLBA    Sectors  Size Id Type
-/dev/block/mmcblk0p1    0,0,1       1023,255,63          1 4294967295 4294967295 2047G ee EFI GPT
-Partition 1 has different physical/logical start (non-Linux?):
-     phys=(0,0,1) logical=(0,0,2)
-Partition 1 has different physical/logical end:
-     phys=(1023,255,63) logical=(266305,4,4)
-
-% Disk /dev/block/mmcblk0p1: 0 MB, 262144 bytes, 512 sectors
+Number  Start (sector)    End (sector)  Size Name
+     1              34             545  256K sbl1
+     2             546            1057  256K sbl2
+     3            1058            2081  512K sbl3
+     4            2082            2593  256K rpm
+     5            2594            4641 1024K tz
+     6            4642            8737 2048K aboot
+     7            8738           12833 2048K aboot2
+     8           12834           12849  8192 ssd
+     9           16384           24575 4096K fsg
+    10           24576           32767 4096K modemst1
+    11           32768           40959 4096K modemst2
+    12           40960          106495 32.0M oeminfo
+    13          106496          237567 64.0M modem
+    14          237568          270335 16.0M recovery
+    15          270336          303103 16.0M recovery2
+    16          303104          311295 4096K misc
+    17          311296          319487 4096K splash
+    18          319488          335871 8192K persist
+    19          335872          352255 8192K tombstones
+    20          352256          353535  640K pad
+    21          360448          385023 12.0M boot
+    22          385024          909311  256M cust
+    23          909312         1302527  192M cache
+    24         1302528         3399679 1024M system
+    25         3399680         5709823 1128M userdata
+    26         5709824        15269854 4667M grow
+Disk /dev/block/mmcblk0p1: 0 MB, 262144 bytes, 512 sectors
 8 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p1 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p10: 4 MB, 4194304 bytes, 8192 sectors
+Disk /dev/block/mmcblk0p10: 4 MB, 4194304 bytes, 8192 sectors
 128 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p10 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p11: 4 MB, 4194304 bytes, 8192 sectors
+Disk /dev/block/mmcblk0p11: 4 MB, 4194304 bytes, 8192 sectors
 128 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p11 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p12: 32 MB, 33554432 bytes, 65536 sectors
+Disk /dev/block/mmcblk0p11 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p12: 32 MB, 33554432 bytes, 65536 sectors
 1024 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p12 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p13: 64 MB, 67108864 bytes, 131072 sectors
+Disk /dev/block/mmcblk0p12 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p13: 64 MB, 67108864 bytes, 131072 sectors
 2048 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
 
@@ -261,111 +305,110 @@ Partition 3 does not end on cylinder boundary
 Partition 4 does not end on cylinder boundary
 
 Partition table entries are not in disk order
-
-% Disk /dev/block/mmcblk0p14: 16 MB, 16777216 bytes, 32768 sectors
+Disk /dev/block/mmcblk0p14: 16 MB, 16777216 bytes, 32768 sectors
 512 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p14 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p15: 16 MB, 16777216 bytes, 32768 sectors
+Disk /dev/block/mmcblk0p15: 16 MB, 16777216 bytes, 32768 sectors
 512 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p15 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p16: 4 MB, 4194304 bytes, 8192 sectors
+Disk /dev/block/mmcblk0p16: 4 MB, 4194304 bytes, 8192 sectors
 128 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p16 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p17: 4 MB, 4194304 bytes, 8192 sectors
+Disk /dev/block/mmcblk0p17: 4 MB, 4194304 bytes, 8192 sectors
 128 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p17 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p18: 8 MB, 8388608 bytes, 16384 sectors
+Disk /dev/block/mmcblk0p18: 8 MB, 8388608 bytes, 16384 sectors
 256 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p18 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p19: 8 MB, 8388608 bytes, 16384 sectors
+Disk /dev/block/mmcblk0p19: 8 MB, 8388608 bytes, 16384 sectors
 256 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p19 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p2: 0 MB, 262144 bytes, 512 sectors
+Disk /dev/block/mmcblk0p19 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p2: 0 MB, 262144 bytes, 512 sectors
 8 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p2 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p20: 0 MB, 655360 bytes, 1280 sectors
+Disk /dev/block/mmcblk0p2 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p20: 0 MB, 655360 bytes, 1280 sectors
 20 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p20 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p21: 12 MB, 12582912 bytes, 24576 sectors
+Disk /dev/block/mmcblk0p20 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p21: 12 MB, 12582912 bytes, 24576 sectors
 384 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p21 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p22: 256 MB, 268435456 bytes, 524288 sectors
+Disk /dev/block/mmcblk0p21 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p22: 256 MB, 268435456 bytes, 524288 sectors
 8192 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p22 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p23: 192 MB, 201326592 bytes, 393216 sectors
+Disk /dev/block/mmcblk0p22 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p23: 192 MB, 201326592 bytes, 393216 sectors
 6144 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p23 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p24: 1024 MB, 1073741824 bytes, 2097152 sectors
+Disk /dev/block/mmcblk0p23 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p24: 1024 MB, 1073741824 bytes, 2097152 sectors
 32768 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p24 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p25: 1128 MB, 1182793728 bytes, 2310144 sectors
+Disk /dev/block/mmcblk0p24 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p25: 1128 MB, 1182793728 bytes, 2310144 sectors
 36096 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p25 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p26: 4667 MB, 4894735872 bytes, 9560031 sectors
+Disk /dev/block/mmcblk0p25 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p26: 4667 MB, 4894735872 bytes, 9560031 sectors
 149375 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
 
 Device                Boot StartCHS    EndCHS        StartLBA     EndLBA    Sectors  Size Id Type
-
-% Disk /dev/block/mmcblk0p3: 0 MB, 524288 bytes, 1024 sectors
+Disk /dev/block/mmcblk0p3: 0 MB, 524288 bytes, 1024 sectors
 16 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p3 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p4: 0 MB, 262144 bytes, 512 sectors
+Disk /dev/block/mmcblk0p3 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p4: 0 MB, 262144 bytes, 512 sectors
 8 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p4 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p5: 1 MB, 1048576 bytes, 2048 sectors
+Disk /dev/block/mmcblk0p4 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p5: 1 MB, 1048576 bytes, 2048 sectors
 32 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p5 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p6: 2 MB, 2097152 bytes, 4096 sectors
+Disk /dev/block/mmcblk0p6: 2 MB, 2097152 bytes, 4096 sectors
 64 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p6 doesn't contain a valid partition table
-
-% Disk /dev/block/mmcblk0p7: 2 MB, 2097152 bytes, 4096 sectors
+Disk /dev/block/mmcblk0p7: 2 MB, 2097152 bytes, 4096 sectors
 64 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p7 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p8: 0 MB, 8192 bytes, 16 sectors
+Disk /dev/block/mmcblk0p7 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p8: 0 MB, 8192 bytes, 16 sectors
 0 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
-Disk /dev/block/mmcblk0p8 doesn't contain a valid partition table
 
-% Disk /dev/block/mmcblk0p9: 4 MB, 4194304 bytes, 8192 sectors
+Disk /dev/block/mmcblk0p8 doesn't contain a valid partition table
+Disk /dev/block/mmcblk0p9: 4 MB, 4194304 bytes, 8192 sectors
 128 cylinders, 4 heads, 16 sectors/track
 Units: cylinders of 64 * 512 = 32768 bytes
+
 Disk /dev/block/mmcblk0p9 doesn't contain a valid partition table
 ```
 
@@ -403,7 +446,9 @@ major minor  #blocks  name
  179       26    4780015 mmcblk0p26
  179       32   15558144 mmcblk1
  179       33   15557120 mmcblk1p1
+```
 
+```console
 root@android:/ # cat /proc/mounts
 rootfs / rootfs ro,relatime 0 0
 tmpfs /dev tmpfs rw,nosuid,relatime,mode=755 0 0
@@ -428,6 +473,61 @@ e=cp437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro 0 0
 /dev/block/vold/179:33 /mnt/secure/asec vfat rw,nosuid,nodev,noexec,relatime,uid=1000,gid=1015,fmask=0002,dmask=0002,allow_utime=0020,codepag
 e=cp437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro 0 0
 tmpfs /storage/sdcard1/.android_secure tmpfs ro,relatime,size=0k,mode=000 0 0
+```
+
+```console
+root@android:/ # cat /proc/diskstats                                         
+   1       0 ram0 0 0 0 0 0 0 0 0 0 0 0
+   1       1 ram1 0 0 0 0 0 0 0 0 0 0 0
+   1       2 ram2 0 0 0 0 0 0 0 0 0 0 0
+   1       3 ram3 0 0 0 0 0 0 0 0 0 0 0
+   1       4 ram4 0 0 0 0 0 0 0 0 0 0 0
+   1       5 ram5 0 0 0 0 0 0 0 0 0 0 0
+   1       6 ram6 0 0 0 0 0 0 0 0 0 0 0
+   1       7 ram7 0 0 0 0 0 0 0 0 0 0 0
+   1       8 ram8 0 0 0 0 0 0 0 0 0 0 0
+   1       9 ram9 0 0 0 0 0 0 0 0 0 0 0
+   1      10 ram10 0 0 0 0 0 0 0 0 0 0 0
+   1      11 ram11 0 0 0 0 0 0 0 0 0 0 0
+   1      12 ram12 0 0 0 0 0 0 0 0 0 0 0
+   1      13 ram13 0 0 0 0 0 0 0 0 0 0 0
+   1      14 ram14 0 0 0 0 0 0 0 0 0 0 0
+   1      15 ram15 0 0 0 0 0 0 0 0 0 0 0
+   7       0 loop0 0 0 0 0 0 0 0 0 0 0 0
+   7       1 loop1 0 0 0 0 0 0 0 0 0 0 0
+   7       2 loop2 0 0 0 0 0 0 0 0 0 0 0
+   7       3 loop3 0 0 0 0 0 0 0 0 0 0 0
+   7       4 loop4 0 0 0 0 0 0 0 0 0 0 0
+   7       5 loop5 0 0 0 0 0 0 0 0 0 0 0
+   7       6 loop6 0 0 0 0 0 0 0 0 0 0 0
+   7       7 loop7 0 0 0 0 0 0 0 0 0 0 0
+ 179       0 mmcblk0 56051 10089900 13722294 410080 1177 1875 24721 23720 0 218660 433560
+ 179       1 mmcblk0p1 1 63 512 10 0 0 0 0 0 10 10
+ 179       2 mmcblk0p2 1 63 512 0 0 0 0 0 0 0 0
+ 179       3 mmcblk0p3 2 126 1024 20 0 0 0 0 0 20 20
+ 179       4 mmcblk0p4 1 63 512 10 0 0 0 0 0 10 10
+ 179       5 mmcblk0p5 4 252 2048 40 0 0 0 0 0 40 40
+ 179       6 mmcblk0p6 45 2003 16384 740 0 0 0 0 0 600 740
+ 179       7 mmcblk0p7 59 1989 16384 680 0 0 0 0 0 390 680
+ 179       8 mmcblk0p8 1 1 16 10 0 0 0 0 0 10 10
+ 179       9 mmcblk0p9 31 993 8192 210 0 0 0 0 0 110 210
+ 179      10 mmcblk0p10 48 1802 14800 430 0 0 0 0 0 350 430
+ 179      11 mmcblk0p11 34 995 8232 200 49 720 6152 380 0 500 580
+ 179      12 mmcblk0p12 272 7941 65704 1660 0 0 0 0 0 920 1660
+ 179      13 mmcblk0p13 968 130552 220681 6490 0 0 0 0 0 3710 6490
+ 179      14 mmcblk0p14 108 3988 32768 690 0 0 0 0 0 470 690
+ 179      15 mmcblk0p15 127 3969 32768 850 0 0 0 0 0 450 850
+ 179      16 mmcblk0p16 23 1001 8192 170 0 0 0 0 0 140 170
+ 179      17 mmcblk0p17 29 995 8192 130 0 0 0 0 0 120 130
+ 179      18 mmcblk0p18 79 2025 16826 570 6 1 56 10 0 320 580
+ 179      19 mmcblk0p19 63 1985 16384 400 0 0 0 0 0 230 400
+ 179      20 mmcblk0p20 4 156 1280 30 0 0 0 0 0 20 30
+ 179      21 mmcblk0p21 220 12068 98304 1810 0 0 0 0 0 1650 1810
+ 179      22 mmcblk0p22 2131 63543 529610 21360 2 0 16 0 0 11310 21350
+ 179      23 mmcblk0p23 1548 47630 393418 10160 8 2 80 20 0 5370 10170
+ 179      24 mmcblk0p24 11666 254413 2453066 76140 19 10 232 60 0 37160 76150
+ 179      25 mmcblk0p25 1403 23529 211484 6800 989 1142 18184 23210 0 19820 30010
+ 179      26 mmcblk0p26 37177 9527752 9564929 280460 1 0 1 30 0 148470 280320
 ```
 
 {% include_relative toc.md %}
