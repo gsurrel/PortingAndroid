@@ -138,7 +138,7 @@ This step is also quite long. If it is too long, wait faster!
 The command is quite similar: read the memory, compress it. This writes the compressed output to the standard output, so we can redirect it to a local file. The `pv` par is optionnal, it's only for having feedback on the progress of the command.
 
 ```
-adb forward tcp:7080 tcp:8080; adb shell "cat /dev/block/sda | gzip -c 2>/dev/null | nc -l -p 8080"& sleep 1; nc localhost 7080 > phone.img.gz; adb forward --remove tcp:7080
+adb forward tcp:7080 tcp:8080; adb shell "cat /dev/block/mmcblk0 | gzip -c 2>/dev/null | nc -l -p 8080"& sleep 1; nc localhost 7080 > phone.img.gz; adb forward --remove tcp:7080
 ```
 
 This step is similarly fast than using the SD card, so same rule apply: if it is too long, wait faster!
