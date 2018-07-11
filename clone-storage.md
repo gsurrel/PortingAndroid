@@ -204,7 +204,7 @@ The previous massive command does the following:
         1. Creates a fifo called `f`.img.gz `mkfifo $f.img.gz;`
         1. Reads the raw partition `f` memory `su -c dd if=/dev/block/platform/msm_sdcc.1/by-name/$f bs=96000000`
         1. Compresses it (while hiding error messages) `| gzip -c 2>/dev/null`
-        1. Duplicates the output to the fifo (*file*) `f`.img.gz ` | tee $f.img.gz`
+        1. Duplicates the output to the fifo (*file*) `f`.img.gz `| tee $f.img.gz`
         1. Sends the gzipped result over the network-over-USB connection `| nc -l -p 8080`
         1. And in parallel, computes locally the hash of the gzipped result reading from the fifo `& md5sum $f.img.gz`
         1. Appends it to a file called sums.md5 `>> sums.md5;`
