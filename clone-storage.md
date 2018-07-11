@@ -222,6 +222,22 @@ The previous massive command does the following:
 1. Removes the sums file on the phone `adb shell "rm /data/local/tmp/sums.md5";`
 1. Compares the local `.img.gz` backups to the ones creates on the phone `md5sum -c sums.md5`
 
+As a note, all this complexity is required because:
+
+1. Using the output of `adb shell` is not binary friendly, so
+1. We require to pass the data with netcat, but
+1. We cannot assume the phone and computer to be on the same fast LAN, hence
+1. We neet to use the ADB forward feature.
+1. Also, a backup without checksum cannot be trusted, however
+1. While using the system, the content of some partitions changes, therefore
+1. We need to read each partition only once, and `tee` the result to both netcat and md5sum. Surprisingly,
+1. The shell in Android is the very old Bourne Shell and doesn't support process substitution, consequently,
+1. We can use FIFOs to have the same behavior.
+1. Finally, netcat wants a non-desirable user input to close the communication, so
+1. We can work around it using a predefined string containing a Here Document, run by being piped to a shell interpreter
+
+In other words, if ADB were binary friendly, netcat not requiring user input at any time, and Android shell less antique, it would be much shorter and easier to understand.
+
 **However**, we need a final step: we have saved neatly and nicely all the partitions but one thing is missing. The final part is 
 the partition map which is at the beginning of the disk. As far as I know, the following is enough (using fdisk as shown in the next section to adapt it: `bs` equal to the `Logical sector size` value, and `count` equal to first `Start (sector)` minus 1):
 
